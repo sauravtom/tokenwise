@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
 use serde::{Deserialize, Serialize};
+use tree_sitter::{Node, Parser};
+use tree_sitter_typescript::LANGUAGE_TYPESCRIPT;
 
 /// Public entrypoint for the `llm_instructions` CLI/MCP tool.
 pub fn llm_instructions(path: Option<String>) -> Result<String> {
@@ -477,6 +479,16 @@ pub fn supersearch(
     let exclude_tests = exclude_tests.unwrap_or(false);
     let q = query.to_lowercase();
 
+    // Normalize context/pattern to known values; fall back to "all" if unknown.
+    let context_norm = match context.as_str() {
+        "all" | "strings" | "comments" | "identifiers" => context.clone(),
+        _ => "all".to_string(),
+    };
+    let pattern_norm = match pattern.as_str() {
+        "all" | "call" | "assign" | "return" => pattern.clone(),
+        _ => "all".to_string(),
+    };
+
     let mut matches = Vec::new();
 
     for file in &bake.files {
@@ -486,17 +498,7 @@ pub fn supersearch(
         }
 
         let path_str = file.path.to_string_lossy();
-        if exclude_tests && path_str.contains("test") || path_str.contains("spec") {
-            continue;
-        }
-
-        // Only consider context/pattern superficially for now.
-        if context != "all" && context != "identifiers" && context != "strings" && context != "comments" {
-            // Unsupported context; skip.
-            continue;
-        }
-        if pattern != "all" && pattern != "call" && pattern != "assign" && pattern != "return" {
-            // Unsupported pattern; skip.
+        if exclude_tests && (path_str.contains("test") || path_str.contains("spec")) {
             continue;
         }
 
@@ -505,14 +507,28 @@ pub fn supersearch(
             Ok(c) => c,
             Err(_) => continue,
         };
+        let file_rel = file.path.to_string_lossy().into_owned();
 
-        for (idx, line) in content.lines().enumerate() {
-            if line.to_lowercase().contains(&q) {
-                matches.push(SupersearchMatch {
-                    file: file.path.to_string_lossy().into_owned(),
-                    line: (idx + 1) as u32,
-                    snippet: line.trim().to_string(),
-                });
+        if lang == "typescript" && (context_norm != "all" || pattern_norm != "all") {
+            // AST-aware search for TypeScript when context/pattern filters are used.
+            ast_supersearch_typescript(
+                &content,
+                &q,
+                &context_norm,
+                &pattern_norm,
+                &file_rel,
+                &mut matches,
+            );
+        } else {
+            // Fallback: line-oriented text search (JS, or TS without extra filters).
+            for (idx, line) in content.lines().enumerate() {
+                if line.to_lowercase().contains(&q) {
+                    matches.push(SupersearchMatch {
+                        file: file_rel.clone(),
+                        line: (idx + 1) as u32,
+                        snippet: line.trim().to_string(),
+                    });
+                }
             }
         }
     }
@@ -530,6 +546,132 @@ pub fn supersearch(
 
     let json = serde_json::to_string_pretty(&payload)?;
     Ok(json)
+}
+
+fn ast_supersearch_typescript(
+    source: &str,
+    query_lc: &str,
+    context: &str,
+    pattern: &str,
+    file: &str,
+    matches: &mut Vec<SupersearchMatch>,
+) {
+    let mut parser = Parser::new();
+    if parser
+        .set_language(&LANGUAGE_TYPESCRIPT.into())
+        .is_err()
+    {
+        return;
+    }
+
+    let tree = match parser.parse(source, None) {
+        Some(t) => t,
+        None => return,
+    };
+
+    let root_node = tree.root_node();
+    let lines: Vec<&str> = source.lines().collect();
+
+    walk_ts_supersearch(
+        root_node,
+        source,
+        &lines,
+        query_lc,
+        context,
+        pattern,
+        false,
+        false,
+        false,
+        file,
+        matches,
+    );
+}
+
+fn walk_ts_supersearch(
+    node: Node,
+    source: &str,
+    lines: &[&str],
+    query_lc: &str,
+    context: &str,
+    pattern: &str,
+    in_call: bool,
+    in_assign: bool,
+    in_return: bool,
+    file: &str,
+    matches: &mut Vec<SupersearchMatch>,
+) {
+    let kind = node.kind();
+
+    let is_call = kind == "call_expression";
+    let is_assign = kind == "assignment_expression" || kind == "variable_declarator";
+    let is_return = kind == "return_statement";
+
+    let in_call = in_call || is_call;
+    let in_assign = in_assign || is_assign;
+    let in_return = in_return || is_return;
+
+    let is_identifier = matches!(
+        kind,
+        "identifier" | "property_identifier" | "shorthand_property_identifier"
+    );
+    let is_string = kind == "string";
+    let is_comment = kind == "comment";
+
+    let is_leaf_of_interest = is_identifier || is_string || is_comment;
+
+    if is_leaf_of_interest {
+        if let Ok(text) = node.utf8_text(source.as_bytes()) {
+            if text.to_lowercase().contains(query_lc) {
+                let context_ok = match context {
+                    "all" => true,
+                    "strings" => is_string,
+                    "comments" => is_comment,
+                    "identifiers" => is_identifier,
+                    _ => true,
+                };
+
+                let pattern_ok = match pattern {
+                    "all" => true,
+                    "call" => in_call,
+                    "assign" => in_assign,
+                    "return" => in_return,
+                    _ => true,
+                };
+
+                if context_ok && pattern_ok {
+                    let row = node.start_position().row as usize;
+                    let line_num = (row + 1) as u32;
+                    let snippet = lines
+                        .get(row)
+                        .map(|s| s.trim().to_string())
+                        .unwrap_or_else(|| text.trim().to_string());
+
+                    matches.push(SupersearchMatch {
+                        file: file.to_string(),
+                        line: line_num,
+                        snippet,
+                    });
+                }
+            }
+        }
+    }
+
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        walk_ts_supersearch(
+            child,
+            source,
+            lines,
+            query_lc,
+            context,
+            pattern,
+            in_call,
+            in_assign,
+            in_return,
+            file,
+            matches,
+        );
+    }
 }
 
 /// Public entrypoint for the `package_summary` tool: summarize a module/directory.

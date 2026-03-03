@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tokio::io::{self, AsyncBufReadExt, AsyncWriteExt, BufReader};
+use tokio::io::{self, AsyncBufReadExt, AsyncReadExt, AsyncWriteExt, BufReader};
 
 /// Minimal JSON-RPC 2.0 request.
 #[derive(Debug, Deserialize)]
@@ -31,53 +31,144 @@ struct JsonRpcError {
     pub message: String,
 }
 
-/// Run a very small MCP-compatible JSON-RPC server over stdin/stdout.
+/// Run a minimal MCP-compatible JSON-RPC server over stdin/stdout.
 ///
-/// For now this only supports list_tools and a stub llm_instructions tool.
+/// Supports both:
+/// - Line-delimited JSON-RPC (Claude Desktop currently does this).
+/// - `Content-Length` framed JSON-RPC 2.0 messages (per MCP spec).
 pub async fn run_stdio_server() -> Result<()> {
     let stdin = io::stdin();
     let stdout = io::stdout();
-    let mut reader = BufReader::new(stdin).lines();
+    let mut reader = BufReader::new(stdin);
     let mut writer = stdout;
 
-    while let Some(line) = reader.next_line().await? {
-        if line.trim().is_empty() {
+    loop {
+        let mut line = String::new();
+        let n = reader.read_line(&mut line).await?;
+        if n == 0 {
+            // EOF
+            return Ok(());
+        }
+
+        let trimmed = line.trim_end_matches(['\r', '\n']);
+        if trimmed.is_empty() {
+            // Skip empty lines.
             continue;
         }
 
-        let req: JsonRpcRequest = match serde_json::from_str(&line) {
-            Ok(r) => r,
-            Err(err) => {
-                let resp = JsonRpcResponse {
-                    jsonrpc: "2.0",
-                    id: None,
-                    result: None,
-                    error: Some(JsonRpcError {
-                        code: -32700,
-                        message: format!("Parse error: {err}"),
-                    }),
-                };
-                let json = serde_json::to_string(&resp)?;
-                writer.write_all(json.as_bytes()).await?;
-                writer.write_all(b"\n").await?;
-                writer.flush().await?;
+        if let Some(rest) = trimmed.strip_prefix("Content-Length:") {
+            // Content-Length framed request.
+            let mut content_length: Option<usize> = None;
+            if let Ok(len) = rest.trim().parse::<usize>() {
+                content_length = Some(len);
+            }
+
+            // Consume remaining headers until blank line.
+            loop {
+                let mut hdr = String::new();
+                let n = reader.read_line(&mut hdr).await?;
+                if n == 0 {
+                    return Ok(());
+                }
+                if hdr.trim().is_empty() {
+                    break;
+                }
+            }
+
+            let len = match content_length {
+                Some(l) => l,
+                None => continue,
+            };
+
+            let mut buf = vec![0u8; len];
+            reader.read_exact(&mut buf).await?;
+            let body = match String::from_utf8(buf) {
+                Ok(s) => s,
+                Err(err) => {
+                    eprintln!("[yoyo-mcp] Non-UTF8 JSON-RPC body: {err}");
+                    continue;
+                }
+            };
+
+            let req: JsonRpcRequest = match serde_json::from_str(&body) {
+                Ok(r) => r,
+                Err(err) => {
+                    eprintln!("[yoyo-mcp] Failed to parse framed request: {err}");
+                    continue;
+                }
+            };
+
+            if req.id.is_none() {
                 continue;
             }
-        };
 
-        let resp = handle_request(req).await;
-        let json = serde_json::to_string(&resp)?;
-        writer.write_all(json.as_bytes()).await?;
-        writer.write_all(b"\n").await?;
-        writer.flush().await?;
+            let resp = handle_request(req).await;
+            let json = serde_json::to_string(&resp)?;
+            let bytes = json.as_bytes();
+            let header = format!("Content-Length: {}\r\n\r\n", bytes.len());
+            writer.write_all(header.as_bytes()).await?;
+            writer.write_all(bytes).await?;
+            writer.flush().await?;
+        } else if trimmed.starts_with('{') || trimmed.starts_with('[') {
+            // Line-delimited JSON-RPC (no framing). This is what Claude Desktop
+            // currently sends/accepts over stdio.
+            let body = trimmed.to_string();
+
+            let req: JsonRpcRequest = match serde_json::from_str(&body) {
+                Ok(r) => r,
+                Err(err) => {
+                    eprintln!("[yoyo-mcp] Failed to parse line-delimited request: {err}");
+                    continue;
+                }
+            };
+
+            if req.id.is_none() {
+                continue;
+            }
+
+            let resp = handle_request(req).await;
+            let json = serde_json::to_string(&resp)?;
+            writer.write_all(json.as_bytes()).await?;
+            writer.write_all(b"\n").await?;
+            writer.flush().await?;
+        } else {
+            // Unknown prefix; ignore and continue.
+            continue;
+        }
     }
-
-    Ok(())
 }
 
 async fn handle_request(req: JsonRpcRequest) -> JsonRpcResponse {
     match req.method.as_str() {
-        "list_tools" => {
+        "initialize" => {
+            // Minimal MCP initialize handshake.
+            let protocol_version = req
+                .params
+                .get("protocolVersion")
+                .and_then(|v| v.as_str())
+                .unwrap_or("2025-11-25");
+
+            let result = serde_json::json!({
+                "protocolVersion": protocol_version,
+                "capabilities": {
+                    "tools": {
+                        "listChanged": true
+                    }
+                },
+                "serverInfo": {
+                    "name": "yoyo",
+                    "version": env!("CARGO_PKG_VERSION"),
+                }
+            });
+
+            JsonRpcResponse {
+                jsonrpc: "2.0",
+                id: req.id,
+                result: Some(result),
+                error: None,
+            }
+        }
+        "list_tools" | "tools/list" => {
             let tools = list_tools();
             JsonRpcResponse {
                 jsonrpc: "2.0",
@@ -86,7 +177,7 @@ async fn handle_request(req: JsonRpcRequest) -> JsonRpcResponse {
                 error: None,
             }
         }
-        "call_tool" => {
+        "call_tool" | "tools/call" => {
             let result = call_tool(req.params).await;
             match result {
                 Ok(v) => JsonRpcResponse {
@@ -120,6 +211,7 @@ async fn handle_request(req: JsonRpcRequest) -> JsonRpcResponse {
 
 fn list_tools() -> Value {
     // Minimal MCP tools list with core CLI-equivalent tools for yoyo.
+    // Include an explicit null nextCursor to match MCP tools/list shape.
     serde_json::json!({
         "tools": [
             {
@@ -480,7 +572,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "shake" => {
@@ -496,7 +589,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "bake" => {
@@ -512,7 +606,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "search" => {
@@ -539,7 +634,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "symbol" => {
@@ -561,7 +657,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "all_endpoints" => {
@@ -577,7 +674,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "slice" => {
@@ -611,7 +709,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "api_surface" => {
@@ -637,7 +736,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "file_functions" => {
@@ -663,7 +763,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "supersearch" => {
@@ -702,7 +803,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "package_summary" => {
@@ -724,7 +826,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "architecture_map" => {
@@ -746,7 +849,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "suggest_placement" => {
@@ -779,7 +883,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "crud_operations" => {
@@ -800,7 +905,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "api_trace" => {
@@ -827,7 +933,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "find_docs" => {
@@ -849,7 +956,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         "patch" => {
@@ -889,7 +997,8 @@ async fn call_tool(params: Value) -> Result<Value> {
                         "type": "text",
                         "text": json
                     }
-                ]
+                ],
+                "isError": false
             }))
         }
         other => Err(anyhow::anyhow!("Unknown tool: {other}")),
