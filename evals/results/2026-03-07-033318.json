@@ -1,0 +1,1012 @@
+{
+  "run_id": "2026-03-07-033318",
+  "codebase": "ripgrep",
+  "yoyo_version": "0.16.1",
+  "model_agent": "claude-haiku-4-5-20251001",
+  "model_judge": "claude-haiku-4-5-20251001",
+  "tasks_run": 20,
+  "totals": {
+    "cc": {
+      "correct": 12,
+      "total": 35
+    },
+    "yoyo": {
+      "correct": 26,
+      "total": 37
+    }
+  },
+  "tasks": [
+    {
+      "id": "rg-001",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, `search_path` is defined in multiple locations in the ripgrep codebase:\n\n1. **`/tmp/ripgrep/crates/searcher/src/searcher/mod.rs:643`** - A public function definition\n2. **`/tmp/ripgrep/crates/core/search.rs:342`** - A private function definition (method)\n3. **`/tmp/ripgrep/crates/core/search.rs:380`** - A function definition\n\nIf you're looking for the primary implementations, the main definitions are:\n- `/tmp/ripgrep/crates/searcher/src/searcher/mod.rs` at line 643\n- `/tmp/ripgrep/crates/core/search.rs` at lines 342 and 380",
+        "score": {
+          "scores": {
+            "file_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identifies crates/core/search.rs as a location"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identifies line 380 as a definition location"
+            },
+            "answer_specificity": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "hallucinated",
+              "note": "Question asks for single location but agent lists multiple unverified locations"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 3,
+            "summary": "Agent identified the correct file and line from ground truth but presented multiple unverified locations, failing to give a direct answer to a specific question."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `search_path` is defined in multiple locations in the ripgrep codebase:\n\n1. **`crates/core/search.rs`** at **line 380** (private function)\n2. **`crates/core/search.rs`** at **line 342** (private function)\n3. **`crates/searcher/src/searcher/mod.rs`** at **line 643** (public function)\n\nThe public definition is in `crates/searcher/src/searcher/mod.rs` starting at line 643, while there are two private definitions in `crates/core/search.rs` at lines 342 and 380.",
+        "score": {
+          "scores": {
+            "file_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies crates/core/search.rs as primary location"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly states line 380 matches ground truth"
+            },
+            "completeness": {
+              "correct": true,
+              "confidence": "medium",
+              "failure_mode": "correct",
+              "note": "Lists ground truth answer first, adds additional context with other definitions"
+            }
+          },
+          "overall": {
+            "correct_count": 3,
+            "total": 3,
+            "summary": "Agent correctly identifies the ground truth location (crates/core/search.rs line 380) with additional context about other definitions."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-002",
+      "type": "visibility",
+      "cc": {
+        "answer": "Based on the grep output, `search_path` has **multiple definitions with different visibility levels**:\n\n1. **Public function** in `/tmp/ripgrep/crates/searcher/src/searcher/mod.rs:643`:\n   - `pub fn search_path<P, M, S>(` - explicitly marked as `pub`\n\n2. **Private method** in `/tmp/ripgrep/crates/core/search.rs:342`:\n   - `fn search_path(&mut self, path: &Path)` - no `pub` keyword, so it's private\n\n3. **Module-level private function** in `/tmp/ripgrep/crates/core/search.rs:380`:\n   - `fn search_path<M: Matcher, W: WriteColor>(` - no `pub` keyword, so it's module-level private\n\nSo the answer depends on which `search_path` function you're asking about. The most prominent one is the **public function** in the searcher module, but there are also private variants in the core search module.",
+        "score": {
+          "scores": {
+            "visibility": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Ground truth states private; agent claims public function exists in searcher/mod.rs"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent contradicts ground truth by identifying a public search_path function when ground truth confirms the function is private."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, there are three `search_path` functions in ripgrep with different visibility levels:\n\n1. **`search_path` in `crates/core/search.rs` (lines 380-412)**: **private**\n2. **`search_path` in `crates/core/search.rs` (lines 342-351)**: **private**\n3. **`search_path` in `crates/searcher/src/searcher/mod.rs` (lines 643-657)**: **public**\n\nSo the answer depends on which `search_path` function you're asking about. There are two private module-level functions in the core crate and one public function in the searcher crate.",
+        "score": {
+          "scores": {
+            "visibility_assessment": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Ground truth states 'private' but answer claims one public function exists"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent identified multiple search_path functions with mixed visibility, contradicting ground truth that ripgrep's search_path is private."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-003",
+      "type": "module_path",
+      "cc": {
+        "answer": "Based on the grep output, `search_path` appears in multiple modules in ripgrep:\n\n1. **`ripgrep::searcher::Searcher`** - Located at `/tmp/ripgrep/crates/searcher/src/searcher/mod.rs:643` (a public method)\n\n2. **`ripgrep::core::search`** - Located at `/tmp/ripgrep/crates/core/search.rs:342` (a private method on some struct)\n\n3. **`ripgrep::core::search`** - Located at `/tmp/ripgrep/crates/core/search.rs:380` (a standalone function, not a method)\n\nThe most prominent appears to be the public `search_path` method in the `searcher` module at `ripgrep::searcher::Searcher::search_path`.",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent identified ripgrep::searcher and ripgrep::core::search; ground truth is crates::core"
+            },
+            "qualified_name": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent gave multiple wrong answers; ground truth is crates::core::search_path"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 2,
+            "summary": "Agent identified wrong modules and methods; correct answer is crates::core::search_path"
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, there are multiple `search_path` functions in the ripgrep codebase belonging to different modules:\n\n1. **`crates::core::search_path`** - Two private functions in the `crates::core` module (located in `crates/core/search.rs`)\n\n2. **`crates::searcher::src::searcher::search_path`** - One public function in the `crates::searcher::src::searcher` module (located in `crates/searcher/src/searcher/mod.rs`)\n\nIf you're asking about the primary/main `search_path` function, the public one belongs to the **`crates::searcher::src::searcher`** module.",
+        "score": {
+          "scores": {
+            "primary_module_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent identifies crates::searcher::src::searcher as primary, not crates::core"
+            },
+            "identifies_correct_module": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identifies crates::core::search_path exists"
+            },
+            "completeness": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Ground truth specifies crates::core; agent prioritizes different module"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 3,
+            "summary": "Agent found correct module but incorrectly identified crates::searcher::src::searcher as the primary answer instead of crates::core."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-004",
+      "type": "fan_out",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep results show three definitions of `search_path` functions, but they only show the function signatures and line numbers\u2014not the function bodies. To count how many functions `search_path` calls, I would need to see the complete implementation of each `search_path` function, which is not included in this output.",
+        "score": {
+          "scores": {
+            "calls_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide the answer, claiming insufficient information available."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to answer rather than providing the correct count of 9 function calls."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Looking at the tool output, I need to count all the unique functions called by `search_path` across all its definitions.\n\nFrom the three `search_path` function definitions:\n\n**First definition (lines 380-412 in crates/core/search.rs):**\n- Ok\n- Some\n- clone (on s)\n- clone (on sink.stats())\n- has_match\n- map\n- search_path (on searcher)\n- sink_with_path\n- stats\n\n**Second definition (lines 342-351 in crates/core/search.rs):**\n- search_path\n\n**Third definition (lines 643-657 in crates/searcher/src/searcher/mod.rs):**\n- Some\n- as_ref\n- map_err\n- open (File::open)\n- search_file_maybe_path\n\nCounting unique function names called:\n1. Ok\n2. Some\n3. clone\n4. has_match\n5. map\n6. search_path\n7. sink_with_path\n8. stats\n9. as_ref\n10. map_err\n11. open\n12. search_file_maybe_path\n\n**The exact count is 12 functions.**",
+        "score": {
+          "scores": {
+            "function_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent counted 12 functions; ground truth specifies 9"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided wrong function count (12 vs ground truth of 9)."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-005",
+      "type": "caller_count",
+      "cc": {
+        "answer": "Based on the tool output, I need to count the functions that directly call `search_path`.\n\nLooking at the grep results, the calls to `search_path` are:\n\n1. `/tmp/ripgrep/crates/core/search.rs:265` - `self.search_path(path)` (method call)\n2. `/tmp/ripgrep/crates/core/search.rs:331` - `self.search_path(path)` (method call)\n3. `/tmp/ripgrep/crates/core/search.rs:347` - `search_path(m, searcher, printer, path)` (function call)\n4. `/tmp/ripgrep/crates/core/search.rs:349` - `search_path(m, searcher, printer, path)` (function call)\n5. `/tmp/ripgrep/crates/core/search.rs:389` - `searcher.search_path(&matcher, path, &mut sink)?` (method call)\n6. `/tmp/ripgrep/crates/core/search.rs:397` - `searcher.search_path(&matcher, path, &mut sink)?` (method call)\n7. `/tmp/ripgrep/crates/core/search.rs:405` - `searcher.search_path(&matcher, path, &mut sink)?` (method call)\n8. `/tmp/ripgrep/grep/examples/simplegrep.rs:58` - `searcher.search_path(...)` (method call)\n\nThe lines with definitions/comments (643, 664, 342, 360, 380) should not be counted as calls.\n\n**8 functions directly call `search_path` in ripgrep.**",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent claims 8 callers, ground truth shows 4 callers total"
+            },
+            "caller_identification": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent lists 8 call sites but ground truth identifies only 2 functions as callers: search and search_decompress"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 2,
+            "summary": "Agent miscounted call sites (8) instead of unique calling functions (4/2), failing to properly aggregate calls by function."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, **1 function** directly calls `search_path` in ripgrep.\n\nThe callers list shows that `search_path` is called by:\n- `search_path` itself (1 caller with depth 1)\n\nThe other callers listed (`search` and `search_decompress`) are callers of other functions, not direct callers of `search_path`.",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent claimed 1 caller; ground truth shows 4 callers"
+            },
+            "caller_identification": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent excluded `search` and `search_decompress` as direct callers; they are listed in ground truth"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 2,
+            "summary": "Agent provided incorrect caller count (1 vs 4) and misidentified which functions directly call `search_path`."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-006",
+      "type": "complexity_rank",
+      "cc": {
+        "answer": "I cannot determine this from the available output. \n\nThe tool output indicates that no native code analysis tool is available, and manual analysis of all files in the ripgrep codebase would be required to calculate and compare complexity scores across all functions.\n\nTo answer this question, you would need to:\n1. Use a complexity analysis tool like `cargo-complexity` or similar Rust code analysis tools\n2. Run it against the ripgrep repository\n3. Compare the complexity scores of all functions to identify the highest one\n\nIf you have access to ripgrep's codebase, I'd recommend running a cyclomatic complexity analysis tool on it to get this information.",
+        "score": {
+          "scores": {
+            "function_name": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer, claiming inability to determine. Correct answer is 'from_low_args'."
+            },
+            "file_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer. Correct file is 'crates/core/flags/hiargs.rs'."
+            },
+            "complexity_score": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer. Correct score is 493."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 3,
+            "summary": "Agent refused to attempt answering, despite having access to the correct ground truth information."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the \"god_functions\" section of the health report, the function with the highest complexity score is:\n\n**Function name:** `from_low_args`\n**File:** `crates/core/flags/hiargs.rs`\n**Complexity:** 17\n**Score:** 493",
+        "score": {
+          "scores": {
+            "function_name": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified 'from_low_args' as the function"
+            },
+            "file_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified 'crates/core/flags/hiargs.rs' as the file"
+            },
+            "complexity_score": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly stated the score is 493"
+            }
+          },
+          "overall": {
+            "correct_count": 3,
+            "total": 3,
+            "summary": "Agent correctly identified all key facts: function name, file, and complexity score of 493."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-007",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, `from_low_args` is defined in multiple locations within ripgrep:\n\n1. **Primary definition**: `/tmp/ripgrep/crates/core/flags/hiargs.rs:113` - This appears to be the main public function definition (`pub(crate) fn from_low_args`)\n\n2. **Additional definitions** (likely trait implementations or specialized versions):\n   - `/tmp/ripgrep/crates/core/flags/hiargs.rs:980`\n   - `/tmp/ripgrep/crates/core/flags/hiargs.rs:1071`\n   - `/tmp/ripgrep/crates/core/flags/hiargs.rs:1159`\n\nAll instances are located in the file: `/tmp/ripgrep/crates/core/flags/hiargs.rs`",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies hiargs.rs as the file"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies line 113 as primary definition"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Answer correctly identifies the file and line number of the primary definition, with additional context about other occurrences."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `from_low_args` is defined in:\n\n**File:** `crates/core/flags/hiargs.rs`\n\n**Line numbers:** There are actually multiple definitions of `from_low_args` in this file:\n1. Lines 113-322 (module visibility, complexity 17)\n2. Lines 980-1048 (private visibility, complexity 9)\n3. Lines 1071-1134 (private visibility, complexity 5)\n4. Lines 1159-1175 (private visibility, complexity 4)\n\nThe primary/main definition appears to be the first one at **line 113**, as it has module-level visibility and the highest complexity.",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified crates/core/flags/hiargs.rs"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified line 113 as primary definition"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Answer correctly identifies both file and primary line number, with helpful additional context about multiple definitions."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-008",
+      "type": "visibility",
+      "cc": {
+        "answer": "Based on the grep output, `from_low_args` has **mixed visibility** in ripgrep:\n\n1. **Module-level (pub(crate))**: Line 113 in `/tmp/ripgrep/crates/core/flags/hiargs.rs` - `pub(crate) fn from_low_args`\n\n2. **Private (fn)**: Lines 980, 1071, and 1159 in the same file - these are private functions (no visibility modifier), likely methods within `impl` blocks.\n\nSo `from_low_args` is not uniformly one visibility level\u2014the main function at line 113 is `pub(crate)`, while the other occurrences (which appear to be trait implementations or impl methods) are private.",
+        "score": {
+          "scores": {
+            "visibility": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies from_low_args as pub(crate), matching ground truth of 'module' level"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified the main from_low_args function as pub(crate) module-level visibility."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `from_low_args` has **mixed visibility levels** in ripgrep:\n\n1. **One public, module-level function** (lines 113-322):\n   - `visibility: \"module\"` \n   - This is the main `from_low_args` function\n\n2. **Three private functions** (lines 980-1048, 1071-1134, and 1159-1175):\n   - `visibility: \"private\"`\n   - These appear to be internal helper functions with the same name\n\nThe primary `from_low_args` function is **module-level** (which in Rust means `pub(crate)` - public within the crate but not externally), while the other three `from_low_args` functions are completely **private**.",
+        "score": {
+          "scores": {
+            "visibility_classification": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies main function as module-level visibility"
+            },
+            "accuracy_of_details": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "hallucinated",
+              "note": "Claims multiple private functions with same name; ground truth shows single module-level function"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 2,
+            "summary": "Agent correctly identifies main visibility but invents non-existent private functions, overcomplicating the answer."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-009",
+      "type": "fan_out",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep results show that there are 4 functions named `from_low_args` defined in the codebase, but the output only displays the function signatures/declarations, not their implementations. To answer how many functions `from_low_args` calls, I would need to see the complete function bodies to count the function calls within them.",
+        "score": {
+          "scores": {
+            "calls_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide a count, claiming insufficient information available."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to answer despite ground truth indicating the answer is determinable (33 function calls)."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, I need to count the unique functions called across all `from_low_args` function variants.\n\nLooking at the four `from_low_args` functions defined in the file, here are the unique callees:\n\n1. Ok\n2. Some\n3. all\n4. auto\n5. available_parallelism\n6. clone\n7. from_low_args (recursive calls)\n8. get\n9. globs\n10. into_bytes\n11. is_file\n12. is_none\n13. is_only_stdin\n14. is_some\n15. iter\n16. len\n17. map_or\n18. min\n19. never\n20. new\n21. preprocessor_globs\n22. stats\n23. supported\n24. take_color_specs\n25. take_hyperlink_config\n26. to_vec\n27. types\n28. unwrap_or\n29. unwrap_or_else\n30. add\n31. contains\n32. drain\n33. insert\n34. into_string\n35. is_empty\n36. patterns_from_path\n37. patterns_from_stdin\n38. push\n39. remove\n40. with_capacity\n41. from\n42. is_dir\n43. is_readable_stdin\n44. convert\n45. none\n46. quit\n\n**The `from_low_args` functions collectively call 46 unique functions in ripgrep.**",
+        "score": {
+          "scores": {
+            "functions_called_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent counted 46 functions; ground truth is 33"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incorrect count of 46 instead of verified 33 functions called by from_low_args."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-010",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, `generate_work` is defined in:\n\n**File:** `/tmp/ripgrep/crates/ignore/src/walk.rs`\n**Line:** 1731",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct file path crates/ignore/src/walk.rs identified"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct line number 1731 identified"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both the file and line number where generate_work is defined."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `generate_work` is defined in:\n\n**File:** `crates/ignore/src/walk.rs`\n**Lines:** 1731-1801",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "File path matches exactly"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Starting line 1731 matches ground truth"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both file and line number for generate_work definition."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-011",
+      "type": "visibility",
+      "cc": {
+        "answer": "Based on the grep output, I can see that `generate_work` is defined at line 1731 in `/tmp/ripgrep/crates/ignore/src/walk.rs`, but the output only shows the function signature line itself without the visibility modifier.\n\nTo definitively answer whether `generate_work` is public, module-level, or private, I would need to see the actual code including the visibility keyword (such as `pub`, `pub(crate)`, or no keyword for private). \n\n**I cannot determine this from the available output** \u2014 the grep result does not include the visibility modifier of the function.",
+        "score": {
+          "scores": {
+            "visibility_determination": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer despite having sufficient information available"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to determine visibility when the information was accessible, failing to provide the correct answer that `generate_work` is private."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `generate_work` is **private** in ripgrep.\n\nThis is indicated by the `\"visibility\": \"private\"` field in the match result.",
+        "score": {
+          "scores": {
+            "visibility_classification": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified generate_work as private, matching ground truth exactly."
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified that generate_work is private in ripgrep."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-012",
+      "type": "fan_out",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep output only shows the location where `generate_work` is defined (`/tmp/ripgrep/crates/ignore/src/walk.rs:1731`), but it doesn't include the function body or implementation details that would show which functions it calls.\n\nTo answer this question, I would need to see the full implementation of the `generate_work` function.",
+        "score": {
+          "scores": {
+            "calls_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide answer; ground truth specifies 25 calls"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent declined to answer due to incomplete information rather than providing the correct count of 25 function calls."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `generate_work` calls **25 functions** in ripgrep.\n\nThis count includes all the unique callees listed in the \"calls\" array, which encompasses both direct function calls (like `check_symlink_loop`, `should_skip_entry`, `path_equals`) and method calls on various objects (like `visit`, `metadata`, `is_dir`, `file_type`, etc.).",
+        "score": {
+          "scores": {
+            "function_call_count": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Answer correctly states 25 functions called, matches ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified that generate_work calls 25 functions in ripgrep."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-013",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, `build` is defined in the walk module at:\n\n**/tmp/ripgrep/crates/ignore/src/walk.rs:565**\n\nThis is the public `build` method on what appears to be a builder struct that returns a `Walk` type.",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct file path: crates/ignore/src/walk.rs"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct line number: 565"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Answer correctly identifies both the file and line number where build is defined."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, the `build` function defined in the walk module is located at:\n\n**File:** `crates/ignore/src/walk.rs`\n**Line:** 565\n\nThis is the first match in the results, with complexity 6 and public visibility, located at lines 565-618.",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "File path matches ground truth exactly"
+            },
+            "line": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Line number matches ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both the file and line number of the build function in ripgrep's walk module."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-014",
+      "type": "visibility",
+      "cc": {
+        "answer": "Based on the grep output, there are multiple `build` functions in `crates/ignore/src/walk.rs`:\n\n1. Line 565: `pub fn build(&self) -> Walk;` - **public**\n2. Line 625: `pub fn build_parallel(&self) -> WalkParallel;` - **public**\n3. Line 1258: `fn build(&mut self) -> Box<dyn ParallelVisitor + 's>;` - **private** (trait method)\n4. Line 1264: `fn build(&mut self) -> Box<dyn ParallelVisitor + 's>` - **private** (trait implementation)\n5. Line 1287: `fn build(&mut self) -> Box<dyn ParallelVisitor + 's>` - **private** (trait implementation)\n\nThe main `build` functions at lines 565 and 625 are **public** (`pub`). The others at lines 1258, 1264, and 1287 are **private** trait methods without visibility modifiers.",
+        "score": {
+          "scores": {
+            "visibility": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified public `build` function at line 565 with `pub` keyword"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified the main `build` function as public, though provided comprehensive analysis of multiple build functions."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, the `build` function in `crates/ignore/src/walk.rs` (at lines 565-618) is **public**.\n\nThis can be seen in the match result where the visibility field is listed as:\n```\n\"visibility\": \"public\"\n```",
+        "score": {
+          "scores": {
+            "build_function_visibility": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Answer correctly identifies the build function as public and cites matching evidence."
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified the build function visibility as public with appropriate supporting evidence."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-015",
+      "type": "fan_out",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep output only shows that there are multiple `build` functions in `/tmp/ripgrep/crates/ignore/src/walk.rs` (at lines 565, 625, 1258, 1264, and 1287), but it does not contain the actual function implementations. To answer how many functions a specific `build` function calls, I would need to see the complete source code of that function.",
+        "score": {
+          "scores": {
+            "calls_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer, claiming insufficient data to determine the count"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to provide the answer despite a specific ground truth value of 30 function calls being available."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "According to the tool output, the `build` function in `crates/ignore/src/walk.rs` (located at lines 565-618) calls **34 functions**.\n\nThese are listed in the \"calls\" array of the first match, which includes calls to functions like:\n- `Some`\n- `self.ig_builder.build` and `self.ig_builder.build_with_cwd`\n- `clone` (on various objects)\n- `cmp`, `file_name`, `path`\n- `follow_links`, `is_file`, `same_file_system`, `max_depth`, `min_depth`\n- `sort_by`, `into_iter`, `iter`, `map`\n- `get_or_set_current_dir`, `unwrap_or_else`\n- `new` (for Path, WalkDir, WalkEventIter)\n- And others",
+        "score": {
+          "scores": {
+            "function_calls_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent reports 34 calls, ground truth is 30 calls"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incorrect function call count (34 vs. 30)."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-016",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, `is_match` is defined in the globset crate at multiple locations:\n\nThe primary public method is defined at:\n- `/tmp/ripgrep/crates/globset/src/lib.rs:342`\n\nThere are also implementations of `is_match` for various internal types at:\n- `/tmp/ripgrep/crates/globset/src/lib.rs:665`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:708`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:736`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:770`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:800`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:832`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:860`\n- `/tmp/ripgrep/crates/globset/src/lib.rs:915`\n\nAnd in `/tmp/ripgrep/crates/globset/src/glob.rs:142`\n\nIf you're looking for the main public API, it's at **`/tmp/ripgrep/crates/globset/src/lib.rs:342`**.",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies crates/globset/src/lib.rs"
+            },
+            "line": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Line 860 is listed among the implementations"
+            },
+            "primary_answer_accuracy": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Claims line 342 is primary, but ground truth specifies line 860"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 3,
+            "summary": "Agent found the correct file and line 860 but incorrectly prioritized line 342 as the primary definition."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, there are multiple `is_match` functions in the globset crate. Here are the main ones:\n\n1. **crates/globset/src/lib.rs, line 342** - Public method\n2. **crates/globset/src/glob.rs, line 142** - Public method\n3. **crates/globset/src/lib.rs, line 665** - Private method\n4. **crates/globset/src/lib.rs, line 708** - Private method\n5. **crates/globset/src/lib.rs, line 736** - Private method\n6. **crates/globset/src/lib.rs, line 770** - Private method\n7. **crates/globset/src/lib.rs, line 800** - Private method\n8. **crates/globset/src/lib.rs, line 832** - Private method\n9. **crates/globset/src/lib.rs, line 860** - Private method\n10. **crates/globset/src/lib.rs, line 915** - Private method\n\nIf you're looking for the primary public `is_match` method in globset, the most likely candidates are **crates/globset/src/lib.rs, line 342** or **crates/globset/src/glob.rs, line 142**. Could you clarify which specific `is_match` you're interested in?",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified crates/globset/src/lib.rs as one location"
+            },
+            "line": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly listed line 860 among the is_match definitions"
+            },
+            "completeness": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Question asked for 'the one' definition but agent provided 10 options without clarity"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 3,
+            "summary": "Agent found correct file and line (860) but listed multiple is_match functions instead of directly answering which is 'the one' referenced."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-017",
+      "type": "module_path",
+      "cc": {
+        "answer": "Based on the grep output, `generate_work` is located in `/tmp/ripgrep/crates/ignore/src/walk.rs` at line 1731. This indicates that `generate_work` belongs to the **`ignore`** crate's **`walk`** module in ripgrep.\n\nMore specifically, it's in the `walk` module of the `ignore` crate (`crates/ignore/src/walk.rs`).",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identifies crates::ignore::src as the module path"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified that `generate_work` belongs to the `crates::ignore::src` module (specifically the walk.rs file within it)."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `generate_work` belongs to the **`crates::ignore::src`** module in ripgrep.\n\nThis is shown in the `module_path` field of the symbol information. The function is located in the file `crates/ignore/src/walk.rs` at lines 1731-1801.",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Answer explicitly states crates::ignore::src matching ground truth"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified the module path for generate_work as crates::ignore::src."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-018",
+      "type": "health_dead_code",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The tool output indicates that no native static analysis tool is available and would require manual analysis of all files in the ripgrep codebase.\n\nTo answer this question accurately, you would need to:\n\n1. Use a dedicated static analysis tool (like `cargo dead-code` analysis, `cargo clippy`, or similar Rust linting tools)\n2. Run it on the ripgrep repository\n3. Parse the results to count uncalled/dead functions\n\nIf you have access to the ripgrep codebase, I'd recommend running:\n```\ncargo clippy -- -W unused\n```\nor checking for any existing analysis reports in the ripgrep project documentation.",
+        "score": {
+          "scores": {
+            "dead_code_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide specific number, claimed inability to determine from available output"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to answer with a specific count despite ground truth value of 92 being available."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "According to the health tool output, the ripgrep codebase has approximately **123 dead (uncalled) functions** based on static analysis.\n\nThis is determined by counting all the entries in the \"dead_code\" array provided in the tool output, which lists functions that are defined but never called anywhere in the codebase.",
+        "score": {
+          "scores": {
+            "dead_functions_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent stated 123; ground truth is 92\u00b110 (range 82-102). 123 exceeds tolerance."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided wrong specific value (123) outside acceptable range (82-102)."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-019",
+      "type": "health_god_functions",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The tool output indicates that no native code analysis tool is available, and manual analysis of all files in the ripgrep codebase would be required to identify the most complex functions.\n\nTo answer this question accurately, I would need:\n1. Access to a code complexity analysis tool (such as one that measures cyclomatic complexity, lines of code, or other complexity metrics)\n2. Or the ability to search through and analyze the ripgrep source code files directly\n\nIf you have access to the ripgrep repository, you could use tools like:\n- `cloc` for code metrics\n- `rust-analyzer` with complexity plugins\n- Manual inspection of the source files focusing on function size and control flow complexity",
+        "score": {
+          "scores": {
+            "top_2_functions_identified": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer rather than providing the specific functions."
+            },
+            "from_low_args_mentioned": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent did not identify from_low_args as one of top 2."
+            },
+            "generate_work_mentioned": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent did not identify generate_work as one of top 2."
+            },
+            "correct_files_provided": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent did not provide file paths."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 4,
+            "summary": "Agent refused to answer and provided no functions, files, or facts matching ground truth."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, the top 2 god functions (most complex) in ripgrep are:\n\n1. **`from_low_args`** in `crates/core/flags/hiargs.rs` (score: 493, complexity: 17)\n\n2. **`generate_work`** in `crates/ignore/src/walk.rs` (score: 336, complexity: 14)",
+        "score": {
+          "scores": {
+            "top_function_name": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified 'from_low_args' as top function"
+            },
+            "top_function_file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct file path for from_low_args"
+            },
+            "second_function_name": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified 'generate_work' as second function"
+            },
+            "second_function_file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct file path for generate_work"
+            }
+          },
+          "overall": {
+            "correct_count": 4,
+            "total": 4,
+            "summary": "Agent correctly identified both god functions and their exact file paths."
+          }
+        }
+      }
+    },
+    {
+      "id": "rg-020",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, the function `search` is defined in ripgrep's core crate at:\n\n**File:** `/tmp/ripgrep/crates/core/main.rs`\n**Line:** 107",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent said main.rs, ground truth is search.rs"
+            },
+            "line": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent said line 107, ground truth is line 245"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 2,
+            "summary": "Agent provided incorrect file and line number for the search function location."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, the function `search` is defined in the ripgrep's core crate at:\n\n**File:** `crates/core/search.rs`\n**Line:** 245-267\n\nThis is the module-level visibility `search` function in the `crates::core` module path.",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "File path matches ground truth exactly"
+            },
+            "line": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Starting line 245 matches ground truth"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both the file and line number where search function is defined."
+          }
+        }
+      }
+    }
+  ]
+}
