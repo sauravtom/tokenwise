@@ -1,0 +1,664 @@
+{
+  "run_id": "2026-03-07-131013",
+  "codebase": "tokio",
+  "yoyo_version": "0.20.0",
+  "model_agent": "claude-haiku-4-5-20251001",
+  "model_judge": "claude-haiku-4-5-20251001",
+  "tasks_run": 14,
+  "totals": {
+    "cc": {
+      "correct": 6,
+      "total": 20
+    },
+    "yoyo": {
+      "correct": 19,
+      "total": 22
+    }
+  },
+  "tasks": [
+    {
+      "id": "tk-001",
+      "type": "definition_location",
+      "cc": {
+        "answer": "Based on the grep output, `poll_acquire` is defined in:\n\n**File:** `/Users/avirajkhare/ttt/tokio/tokio-master/tokio/src/sync/batch_semaphore.rs`\n**Line:** 397",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "File path matches ground truth (tokio/src/sync/batch_semaphore.rs)"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Line number 397 matches ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both the file and line number for poll_acquire definition."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `poll_acquire` is defined in:\n\n**File:** `tokio/src/sync/batch_semaphore.rs`\n**Line:** 397-522 (the function spans from line 397 to line 522)",
+        "score": {
+          "scores": {
+            "file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct file path provided"
+            },
+            "line": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct starting line number (397) provided"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified file and line number; additional span information is helpful but not required."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-002",
+      "type": "visibility",
+      "cc": {
+        "answer": "Based on the grep output provided, I can only see that `poll_acquire` exists at line 397 in `/Users/avirajkhare/ttt/tokio/tokio-master/tokio/src/sync/batch_semaphore.rs`, but the output does not include the visibility modifier (such as `pub`, `pub(crate)`, or no modifier for private).\n\nTo answer your question about whether it's public, module-level, or private, I would need to see the actual function signature including its visibility modifier. I cannot determine this from the available output.",
+        "score": {
+          "scores": {
+            "visibility_determination": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to determine visibility despite being able to infer it"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to determine the visibility status when it could have examined the function definition."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `poll_acquire` in `tokio/src/sync/batch_semaphore.rs` is **private**.\n\nThis is indicated by the `\"visibility\": \"private\"` field in the match result.",
+        "score": {
+          "scores": {
+            "visibility": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identifies poll_acquire as private, matching ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly determined that poll_acquire is private with high confidence."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-003",
+      "type": "module_path",
+      "cc": {
+        "answer": "Based on the grep output, `poll_acquire` is located in `/Users/avirajkhare/ttt/tokio/tokio-master/tokio/src/sync/batch_semaphore.rs` at line 397.\n\nFrom the file path, the module path would be: **`tokio::sync::batch_semaphore`**\n\nHowever, to determine the exact full module path (including any parent modules or the specific struct/trait that `poll_acquire` belongs to), I would need to see the actual code context around line 397 in that file, which is not provided in the grep output. The grep output only shows the file location and line number, not the code itself.",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent gave `tokio::sync::batch_semaphore` instead of `tokio::src::sync`"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incorrect module path by omitting 'src' directory level in the hierarchy."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `poll_acquire` belongs to the module with the full path:\n\n**`tokio::src::sync`**\n\nThis is shown in the `module_path` field of the match result.",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Missing 'tokio-master' crate prefix from ground truth"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incomplete module path, omitting the crate name 'tokio-master'."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-004",
+      "type": "fan_out",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep output only shows the function signature line (`fn poll_acquire(`) at line 397, but does not include the function body or implementation details that would show the `calls` array and its size. To answer this question, I would need to see the actual implementation of the `poll_acquire` function.",
+        "score": {
+          "scores": {
+            "calls_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer, claiming insufficient data. Ground truth shows 14 entries."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to provide the answer despite ground truth showing 14 entries exist."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "According to the tool output, the `calls` array length for `poll_acquire` in `tokio/src/sync/batch_semaphore.rs` is **14**.",
+        "score": {
+          "scores": {
+            "calls_array_count": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified exactly 14 entries in calls array"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent accurately stated the exact count of 14 entries in the calls array for poll_acquire."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-005",
+      "type": "caller_count",
+      "cc": {
+        "answer": "Based on the tool output, I can identify the following distinct functions that call `poll_acquire` (excluding self-recursion):\n\n1. `poll_acquire_many` in `/tokio-util/src/sync/poll_semaphore.rs:59` - calls `poll_acquire_many`\n2. The Future implementation in `/tokio-util/src/sync/poll_semaphore.rs:149` - calls `poll_acquire`\n3. A function in `/tokio/src/sync/batch_semaphore.rs:600` - calls `poll_acquire`\n\nHowever, the tool output is incomplete (it appears to be cut off at the end). Given the visible information, I can identify at least **3 distinct functions** that call `poll_acquire` excluding self-recursion:\n\n1. `poll_acquire_many` (in poll_semaphore.rs)\n2. A Future poll implementation (in poll_semaphore.rs)\n3. An unnamed function (in batch_semaphore.rs, line 600)\n\nThat said, the output is truncated, so there may be additional calls not shown. Based on what is clearly visible, the answer is **3**, but I cannot be completely certain without the full output.",
+        "score": {
+          "scores": {
+            "distinct_function_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent stated 3 callers; ground truth is 121. Massive undercounting due to incomplete tool output."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided count of 3 distinct callers when ground truth is 121, severely undercounting due to truncated tool output."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the blast-radius tool output provided, **69** distinct functions call `poll_acquire` in tokio (excluding self-recursion).\n\nThis is indicated by the \"unique non-self callers: 69\" metric in the output.",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent stated 69, ground truth is 121. Significant discrepancy."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incorrect count (69 vs. 121) despite citing specific metric from tool output."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-006",
+      "type": "complexity_rank",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The tool output indicates that no native code analysis tool is available, and manual analysis of all files would be required to calculate and compare complexity scores across the tokio codebase.\n\nTo answer this question, you would need to:\n1. Use a code complexity analysis tool (like `cargo-complexity`, `rust-code-analysis`, or similar)\n2. Run it against the tokio repository\n3. Review the results to identify the function with the highest complexity score",
+        "score": {
+          "scores": {
+            "function_name": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide answer, stated tools unavailable"
+            },
+            "file_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide answer, stated tools unavailable"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 2,
+            "summary": "Agent refused to answer by claiming insufficient tools, when the ground truth shows a specific verifiable answer exists."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output provided, the function with the highest complexity score in tokio is:\n\n**Function name:** `test_combination`\n**File:** `tokio/src/runtime/tests/task_combinations.rs`\n**Complexity score:** 957",
+        "score": {
+          "scores": {
+            "function_name": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified as 'test_combination'"
+            },
+            "file_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified as 'tokio/src/runtime/tests/task_combinations.rs'"
+            },
+            "complexity_score": {
+              "correct": true,
+              "confidence": "medium",
+              "failure_mode": "correct",
+              "note": "Stated as 957, matches ground truth context but not explicitly verified"
+            }
+          },
+          "overall": {
+            "correct_count": 3,
+            "total": 3,
+            "summary": "Agent correctly identified the function name and file path matching ground truth."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-007",
+      "type": "definition_location",
+      "cc": {
+        "answer": "The primary `spawn_blocking` function is defined at line **179** in `/Users/avirajkhare/ttt/tokio/tokio-master/tokio/src/runtime/blocking/pool.rs`.\n\nThis is the crate-level public function signature: `pub(crate) fn spawn_blocking<F, R>(func: F) -> JoinHandle<R>`",
+        "score": {
+          "scores": {
+            "line_number": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent claims line 179, ground truth is line 298"
+            },
+            "file_location": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correct file path identified"
+            },
+            "function_signature": {
+              "correct": true,
+              "confidence": "medium",
+              "failure_mode": "correct",
+              "note": "Signature appears plausible but cannot verify without code access"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 3,
+            "summary": "Agent provided wrong line number (179 vs 298), correct file, and plausible function signature."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "The primary `spawn_blocking` is defined at **line 298** in `tokio/src/runtime/blocking/pool.rs`.",
+        "score": {
+          "scores": {
+            "file_location": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identifies tokio/src/runtime/blocking/pool.rs"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly states line 298"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent provided accurate file path and line number for spawn_blocking definition."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-008",
+      "type": "visibility",
+      "cc": {
+        "answer": "Based on the grep output, `spawn_blocking` in `tokio/src/runtime/blocking/pool.rs` is **module-level (pub(crate))**.\n\nThis is evident from line 179:\n```\npub(crate) fn spawn_blocking<F, R>(func: F) -> JoinHandle<R>\n```\n\nThe `pub(crate)` visibility modifier indicates it is accessible throughout the crate but not publicly exported outside the crate.",
+        "score": {
+          "scores": {
+            "visibility_level": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified pub(crate) as module-level visibility with evidence."
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly determined spawn_blocking has module-level (pub(crate)) visibility with accurate code citation."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `spawn_blocking` in `tokio/src/runtime/blocking/pool.rs` is **module-level** (pub(crate)).\n\nThe search results show two `spawn_blocking` matches in this file, and both have `\"visibility\": \"module\"`, which indicates they have module-level visibility (pub(crate) in Rust terminology).",
+        "score": {
+          "scores": {
+            "visibility_classification": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Answer correctly identifies module-level visibility matching ground truth"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly determined spawn_blocking has module-level (pub(crate)) visibility."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-009",
+      "type": "caller_count",
+      "cc": {
+        "answer": "I cannot determine this from the available output.\n\nWhile the grep output shows 244 total hits for `spawn_blocking`, it includes:\n- Definitions of `spawn_blocking` functions themselves\n- Comments mentioning `spawn_blocking`\n- Documentation examples\n- Various usages across different files\n\nTo accurately count the number of **distinct functions that call `spawn_blocking`** (excluding self-recursion), I would need:\n1. The complete list of all 244 hits with full context\n2. A way to identify which are actual function calls vs. definitions, comments, or documentation\n3. The ability to map each call to its containing function and filter out recursive calls\n\nThe truncated output provided doesn't contain enough detail to make this determination accurately.",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide answer; ground truth shows 135 distinct callers"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to attempt the answer despite ground truth being 135 distinct functions calling spawn_blocking."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output provided, **99** distinct functions call `spawn_blocking` in tokio (excluding self-recursion).\n\nThis is indicated by the \"unique non-self callers\" metric in the blast-radius output, which specifically excludes self-recursive calls.",
+        "score": {
+          "scores": {
+            "spawn_blocking_caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent stated 99, ground truth is 135. Significant discrepancy in count."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incorrect caller count (99 vs. ground truth 135)."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-010",
+      "type": "definition_location",
+      "cc": {
+        "answer": "According to the grep output, `poll` is defined at line **578** in `/Users/avirajkhare/ttt/tokio/tokio-master/tokio/src/sync/batch_semaphore.rs`.",
+        "score": {
+          "scores": {
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified line 578 as the location of poll definition"
+            },
+            "file_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified the file tokio/src/sync/batch_semaphore.rs"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both the file and exact line number where poll is defined."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "According to the tool output, `poll` is defined in `tokio/src/sync/batch_semaphore.rs` at **line 578** (spanning through line 618).",
+        "score": {
+          "scores": {
+            "file_location": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly identified the file tokio/src/sync/batch_semaphore.rs"
+            },
+            "line_number": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Correctly stated line 578 as the definition location"
+            }
+          },
+          "overall": {
+            "correct_count": 2,
+            "total": 2,
+            "summary": "Agent correctly identified both the file and exact line number where `poll` is defined."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-011",
+      "type": "fan_out",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep output shows that a `poll` function exists at line 578 in `tokio/src/sync/batch_semaphore.rs`, but it doesn't show the function's implementation details or any information about a `calls` array. To answer your question, I would need to see the actual code content of that `poll` function.",
+        "score": {
+          "scores": {
+            "calls_array_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer despite ground truth showing answer is 3"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to provide the answer (3 entries) despite ground truth being available."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "According to the tool output, the `calls` array for `poll` in `tokio/src/sync/batch_semaphore.rs` has **3** entries.\n\nThis is explicitly stated in the output: `calls array length: 3`",
+        "score": {
+          "scores": {
+            "calls_array_count": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Answer correctly identifies 3 entries, matching ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly stated the calls array has 3 entries with high confidence."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-012",
+      "type": "health_dead_code",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The tool output indicates that no native tool is available and would require reading all files and manual analysis. Without actual data from running the health tool on the tokio codebase, I cannot provide the specific number of items in the `dead_code` array.\n\nTo answer this question, you would need to:\n1. Run the health tool on the tokio codebase\n2. Capture the output containing the `dead_code` array\n3. Count the items in that array",
+        "score": {
+          "scores": {
+            "dead_code_array_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide answer, citing lack of data access when ground truth exists."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent declined to answer with the specific count (126) that was verifiable."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "According to the tool output, the `dead_code` array contains **126 items** in the tokio codebase.",
+        "score": {
+          "scores": {
+            "dead_code_count": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly states 126 items in dead_code array"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent accurately reported the dead_code array contains 126 items."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-013",
+      "type": "health_god_functions",
+      "cc": {
+        "answer": "I cannot determine this from the available output. \n\nThe tool output indicates that no automated code analysis is available, and manual analysis of the entire Tokio codebase would be required to identify the most complex functions. Without access to code metrics (cyclomatic complexity, lines of code, branching factor, etc.) or the ability to scan the codebase systematically, I cannot reliably identify which functions are the \"most complex\" or \"god functions\" in the tokio project.\n\nTo answer this question accurately would require either:\n1. Running a static analysis tool that measures code complexity metrics\n2. Manual review of the tokio source code to assess function complexity\n3. Access to previously published code quality analyses of the tokio project",
+        "score": {
+          "scores": {
+            "top_2_god_functions_identified": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to answer rather than providing the required function names"
+            },
+            "function_files_provided": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent did not provide the required file paths for the functions"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 2,
+            "summary": "Agent refused to answer the question citing lack of code analysis tools, despite ground truth being available and verifiable."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the health tool output, the top 2 god functions (most complex) in tokio are:\n\n1. **test_combination** - located in `tokio/src/runtime/tests/task_combinations.rs` (complexity score: 957)\n\n2. **test_named_pipe_multi_client_ready** - located in `tokio/tests/net_named_pipe.rs` (complexity score: 480)",
+        "score": {
+          "scores": {
+            "god_function_1_name": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "test_combination matches ground truth exactly"
+            },
+            "god_function_1_file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "File path matches ground truth exactly"
+            },
+            "god_function_2_name": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "test_named_pipe_multi_client_ready matches ground truth"
+            },
+            "god_function_2_file": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "File path matches ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 4,
+            "total": 4,
+            "summary": "Agent correctly identified both top god functions and their file locations matching ground truth."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-014",
+      "type": "module_path",
+      "cc": {
+        "answer": "Based on the tool output, `spawn_blocking` in `tokio/src/runtime/blocking/pool.rs` belongs to the **`tokio::runtime::blocking::pool`** module.\n\nThis is evident from the file path: `/tokio/src/runtime/blocking/pool.rs`, which corresponds to the module hierarchy `tokio::runtime::blocking::pool`.",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent stated 'tokio::runtime::blocking::pool' but ground truth is 'tokio::src::runtime::blocking'"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent incorrectly included 'pool' in the module path and 'src' in the middle of the path."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the tool output, `spawn_blocking` in `tokio/src/runtime/blocking/pool.rs` belongs to the module:\n\n**`tokio::src::runtime::blocking`**\n\nThis can be seen from the `module_path` field in the matches, which shows `\"module_path\": \"tokio::src::runtime::blocking\"` for both `spawn_blocking` functions found in that file.",
+        "score": {
+          "scores": {
+            "module_path": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent correctly identified module path as tokio::src::runtime::blocking"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified the module path for spawn_blocking function."
+          }
+        }
+      }
+    }
+  ]
+}

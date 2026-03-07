@@ -1,0 +1,100 @@
+{
+  "run_id": "2026-03-07-131052",
+  "codebase": "tokio",
+  "yoyo_version": "0.20.0",
+  "model_agent": "claude-haiku-4-5-20251001",
+  "model_judge": "claude-haiku-4-5-20251001",
+  "tasks_run": 2,
+  "totals": {
+    "cc": {
+      "correct": 0,
+      "total": 2
+    },
+    "yoyo": {
+      "correct": 1,
+      "total": 2
+    }
+  },
+  "tasks": [
+    {
+      "id": "tk-005",
+      "type": "caller_count",
+      "cc": {
+        "answer": "Based on the tool output provided, I can identify the following distinct functions that call `poll_acquire` (excluding self-recursion):\n\n1. `poll_acquire_many` in `/tokio-util/src/sync/poll_semaphore.rs:59` (calls `poll_acquire_many` with 1 permit)\n2. An unnamed closure in the `Future` implementation in `/tokio-util/src/sync/poll_semaphore.rs:149` (calls `poll_acquire` via `Pin::into_inner(self).poll_acquire(cx)`)\n3. The test function `poll_acquire_one_available` in `/tokio/src/sync/tests/semaphore_batch.rs:10`\n\nHowever, the output is truncated at the end, so I cannot be completely certain there aren't additional callers. Based on the visible, complete information in the provided output, I can confidently identify **at least 2-3 distinct functions** that call `poll_acquire` excluding self-recursion.\n\nTo give a definitive count, I would need the complete, untruncated output from the grep search.",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent claims 2-3 callers; ground truth is 121 distinct functions"
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent significantly undercounted callers (2-3 vs. 121), acknowledging incomplete tool output but failing to provide accurate count."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the blast-radius output provided, **121** distinct functions call `poll_acquire` in tokio (excluding self-recursion).",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": true,
+              "confidence": "high",
+              "failure_mode": "correct",
+              "note": "Agent stated 121, matching ground truth exactly"
+            }
+          },
+          "overall": {
+            "correct_count": 1,
+            "total": 1,
+            "summary": "Agent correctly identified 121 distinct functions calling poll_acquire in tokio."
+          }
+        }
+      }
+    },
+    {
+      "id": "tk-009",
+      "type": "caller_count",
+      "cc": {
+        "answer": "I cannot determine this from the available output. The grep results show 244 total hits for 'spawn_blocking', but this includes:\n\n1. Definition/comments of `spawn_blocking` itself\n2. Documentation and comments mentioning `spawn_blocking`\n3. Various calls to `spawn_blocking`\n\nTo accurately count the number of **distinct functions that call `spawn_blocking`** (excluding self-recursion), I would need:\n\n1. The complete list of all 244 hits (the output appears to be truncated)\n2. Context for each hit showing which function it belongs to\n3. A way to deduplicate and identify unique calling functions\n\nThe output provided only shows partial file paths and individual line snippets without sufficient context to map each call to its containing function and count distinct callers.",
+        "score": {
+          "scores": {
+            "distinct_function_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "refused",
+              "note": "Agent refused to provide a count, stating insufficient data available."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent refused to answer with a specific count despite ground truth of 135 distinct functions."
+          }
+        }
+      },
+      "yoyo": {
+        "answer": "Based on the blast-radius output provided, **126** distinct functions call `spawn_blocking` in tokio (excluding self-recursion).",
+        "score": {
+          "scores": {
+            "caller_count": {
+              "correct": false,
+              "confidence": "high",
+              "failure_mode": "wrong_fact",
+              "note": "Agent claimed 126, ground truth is 135. Difference of 9 callers."
+            }
+          },
+          "overall": {
+            "correct_count": 0,
+            "total": 1,
+            "summary": "Agent provided incorrect count (126 vs 135), missing 9 distinct function callers."
+          }
+        }
+      }
+    }
+  ]
+}
