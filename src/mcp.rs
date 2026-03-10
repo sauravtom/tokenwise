@@ -146,7 +146,7 @@ async fn handle_request(req: JsonRpcRequest) -> JsonRpcResponse {
                 "protocolVersion": protocol_version,
                 "capabilities": {"tools": {"listChanged": false}},
                 "serverInfo": {"name": "tokenwise", "version": env!("CARGO_PKG_VERSION")},
-                "instructions": "You have access to tokenwise, a code intelligence MCP server — 27 tools to read and edit any codebase from the AST, not model memory. \
+                "instructions": "You have access to tokenwise, a code intelligence MCP server with a full AST-grounded toolset to read and edit any codebase. \
                     ON FIRST CONTACT: call `llm_instructions` and `bake` in parallel — do not wait for one before starting the other. \
                     `llm_instructions` returns the full tool catalog, 21 combination workflows, prime directives, and antipatterns. Read it before doing anything else. \
                     `bake` builds the index all read-indexed tools depend on. \
@@ -155,7 +155,12 @@ async fn handle_request(req: JsonRpcRequest) -> JsonRpcResponse {
                     REPLACEMENTS — no exceptions: supersearch replaces grep/rg. symbol+include_source replaces cat/Read. slice replaces line-range reads. patch replaces Edit for function-level changes. flow replaces api_trace+trace_down+symbol."
             });
 
-            JsonRpcResponse { jsonrpc: "2.0", id: req.id, result: Some(result), error: None }
+            JsonRpcResponse {
+                jsonrpc: "2.0",
+                id: req.id,
+                result: Some(result),
+                error: None,
+            }
         }
         "ping" => JsonRpcResponse {
             jsonrpc: "2.0",
@@ -170,28 +175,47 @@ async fn handle_request(req: JsonRpcRequest) -> JsonRpcResponse {
             error: None,
         },
         "call_tool" | "tools/call" => match call_tool(req.params).await {
-            Ok(v) => JsonRpcResponse { jsonrpc: "2.0", id: req.id, result: Some(v), error: None },
+            Ok(v) => JsonRpcResponse {
+                jsonrpc: "2.0",
+                id: req.id,
+                result: Some(v),
+                error: None,
+            },
             Err(e) => JsonRpcResponse {
                 jsonrpc: "2.0",
                 id: req.id,
                 result: None,
-                error: Some(JsonRpcError { code: -32000, message: e.to_string() }),
+                error: Some(JsonRpcError {
+                    code: -32000,
+                    message: e.to_string(),
+                }),
             },
         },
         _ => JsonRpcResponse {
             jsonrpc: "2.0",
             id: req.id,
             result: None,
-            error: Some(JsonRpcError { code: -32601, message: "Method not found".to_string() }),
+            error: Some(JsonRpcError {
+                code: -32601,
+                message: "Method not found".to_string(),
+            }),
         },
     }
 }
 
 fn list_tools() -> Value {
-    fn s(desc: &str) -> Value { json!({"type": "string", "description": desc}) }
-    fn i(desc: &str) -> Value { json!({"type": "integer", "description": desc}) }
-    fn b(desc: &str) -> Value { json!({"type": "boolean", "description": desc}) }
-    fn p() -> Value { s("Optional path to project directory") }
+    fn s(desc: &str) -> Value {
+        json!({"type": "string", "description": desc})
+    }
+    fn i(desc: &str) -> Value {
+        json!({"type": "integer", "description": desc})
+    }
+    fn b(desc: &str) -> Value {
+        json!({"type": "boolean", "description": desc})
+    }
+    fn p() -> Value {
+        s("Optional path to project directory")
+    }
     fn tool(name: &str, desc: &str, props: Value) -> Value {
         json!({"name": name, "description": desc, "inputSchema": {"type": "object", "properties": props}})
     }
@@ -203,6 +227,21 @@ fn list_tools() -> Value {
         tool("llm_instructions", "Bootstrap: full tool catalog, 21 combination workflows, prime directives, and antipatterns. Call in parallel with bake on first contact — do not skip.", json!({"path": p()})),
         tool("shake", "30-second codebase overview: language breakdown, file count, top-complexity functions. Use first when orienting to an unfamiliar project. Pair with architecture_map for full orientation.", json!({"path": p()})),
         tool("bake", "Build the AST index all read-indexed tools depend on. Call in parallel with llm_instructions on first contact. Re-run after large external changes (git pull, generated files).", json!({"path": p()})),
+        tool("warm", "Build indexes and start the daemon for low-latency incremental updates. Equivalent to bake + daemon_start.", json!({
+            "path": p(),
+            "no_daemon": b("If true, skip daemon start after bake"),
+            "threshold": i("Optional dirty-file threshold before daemon reindex (default 20)")
+        })),
+        tool("daemon_start", "Start the background daemon for incremental reindex + embedding refresh.", json!({
+            "path": p(),
+            "threshold": i("Optional dirty-file threshold before daemon reindex (default 20)")
+        })),
+        tool("daemon_stop", "Stop the background daemon for this project.", json!({"path": p()})),
+        tool("daemon_status", "Show daemon status, queue depth, and reindex counters.", json!({"path": p()})),
+        tool_req("daemon_notify", "Notify daemon that a file changed. If daemon is offline, performs inline reindex as fallback.", &["file"], json!({
+            "path": p(),
+            "file": s("Changed file path (absolute or relative to project root)")
+        })),
         tool("symbol", "Find a function by name — returns file, line range, visibility, calls, and optionally full source. Always pass include_source=true when you need to read the body; never use Read/cat instead. Use file to scope when names collide across modules.", json!({
             "path": p(),
             "name": s("Symbol (function) name to look up"),
@@ -371,7 +410,10 @@ struct Args(Value);
 
 impl Args {
     fn str_opt(&self, key: &str) -> Option<String> {
-        self.0.get(key).and_then(|v| v.as_str()).map(|s| s.to_string())
+        self.0
+            .get(key)
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
     }
     fn str_req(&self, key: &str, tool: &str) -> Result<String> {
         self.str_opt(key)
@@ -384,7 +426,9 @@ impl Args {
         self.0.get(key).and_then(|v| v.as_u64()).map(|n| n as usize)
     }
     fn uint_req(&self, key: &str, tool: &str) -> Result<u64> {
-        self.0.get(key).and_then(|v| v.as_u64())
+        self.0
+            .get(key)
+            .and_then(|v| v.as_u64())
             .ok_or_else(|| anyhow::anyhow!("Missing required '{}' argument for {}", key, tool))
     }
 }
@@ -400,9 +444,21 @@ async fn call_tool(params: Value) -> Result<Value> {
 
     match p.name.as_str() {
         "llm_instructions" => ok_text(crate::engine::llm_instructions(path)?),
-        "shake"            => ok_text(crate::engine::shake(path)?),
-        "bake"             => ok_text(crate::engine::bake(path)?),
-        "all_endpoints"    => ok_text(crate::engine::all_endpoints(path)?),
+        "shake" => ok_text(crate::engine::shake(path)?),
+        "bake" => ok_text(crate::engine::bake(path)?),
+        "warm" => ok_text(crate::daemon::warm(
+            path,
+            a.bool_opt("no_daemon").unwrap_or(false),
+            a.uint_opt("threshold"),
+        )?),
+        "daemon_start" => ok_text(crate::daemon::start(path, a.uint_opt("threshold"))?),
+        "daemon_stop" => ok_text(crate::daemon::stop(path)?),
+        "daemon_status" => ok_text(crate::daemon::status(path)?),
+        "daemon_notify" => ok_text(crate::daemon::notify(
+            path,
+            a.str_req("file", "daemon_notify")?,
+        )?),
+        "all_endpoints" => ok_text(crate::engine::all_endpoints(path)?),
         "flow" => ok_text(crate::engine::flow(
             path,
             a.str_req("endpoint", "flow")?,
@@ -424,10 +480,14 @@ async fn call_tool(params: Value) -> Result<Value> {
             a.uint_req("end_line", "slice")? as u32,
         )?),
         "api_surface" => ok_text(crate::engine::api_surface(
-            path, a.str_opt("package"), a.uint_opt("limit"),
+            path,
+            a.str_opt("package"),
+            a.uint_opt("limit"),
         )?),
         "file_functions" => ok_text(crate::engine::file_functions(
-            path, a.str_req("file", "file_functions")?, a.bool_opt("include_summaries"),
+            path,
+            a.str_req("file", "file_functions")?,
+            a.bool_opt("include_summaries"),
         )?),
         "supersearch" => ok_text(crate::engine::supersearch(
             path,
@@ -438,7 +498,10 @@ async fn call_tool(params: Value) -> Result<Value> {
             a.str_opt("file"),
             a.uint_opt("limit"),
         )?),
-        "package_summary"  => ok_text(crate::engine::package_summary(path, a.str_req("package", "package_summary")?)?),
+        "package_summary" => ok_text(crate::engine::package_summary(
+            path,
+            a.str_req("package", "package_summary")?,
+        )?),
         "architecture_map" => ok_text(crate::engine::architecture_map(path, a.str_opt("intent"))?),
         "suggest_placement" => ok_text(crate::engine::suggest_placement(
             path,
@@ -448,19 +511,33 @@ async fn call_tool(params: Value) -> Result<Value> {
         )?),
         "crud_operations" => ok_text(crate::engine::crud_operations(path, a.str_opt("entity"))?),
         "api_trace" => ok_text(crate::engine::api_trace(
-            path, a.str_req("endpoint", "api_trace")?, a.str_opt("method"),
+            path,
+            a.str_req("endpoint", "api_trace")?,
+            a.str_opt("method"),
         )?),
         "find_docs" => ok_text(crate::engine::find_docs(
-            path, a.str_req("doc_type", "find_docs")?, a.uint_opt("limit"),
+            path,
+            a.str_req("doc_type", "find_docs")?,
+            a.uint_opt("limit"),
         )?),
         "patch" => {
             if let Some(old_string) = a.str_opt("old_string") {
                 let new_string = a.str_req("new_string", "patch")?;
-                ok_text(crate::engine::patch_string(path, a.str_req("file", "patch")?, old_string, new_string)?)
+                ok_text(crate::engine::patch_string(
+                    path,
+                    a.str_req("file", "patch")?,
+                    old_string,
+                    new_string,
+                )?)
             } else {
                 let new_content = a.str_req("new_content", "patch")?;
                 let json = if let Some(name) = a.str_opt("name") {
-                    crate::engine::patch_by_symbol(path, name, new_content, a.uint_opt("match_index"))?
+                    crate::engine::patch_by_symbol(
+                        path,
+                        name,
+                        new_content,
+                        a.uint_opt("match_index"),
+                    )?
                 } else {
                     crate::engine::patch(
                         path,
@@ -481,27 +558,49 @@ async fn call_tool(params: Value) -> Result<Value> {
             a.str_req("new_content", "patch_bytes")?,
         )?),
         "multi_patch" => {
-            let edits_val = a.0.get("edits").and_then(|v| v.as_array())
-                .ok_or_else(|| anyhow::anyhow!("Missing required 'edits' argument for multi_patch"))?;
+            let edits_val = a.0.get("edits").and_then(|v| v.as_array()).ok_or_else(|| {
+                anyhow::anyhow!("Missing required 'edits' argument for multi_patch")
+            })?;
             let mut edits = Vec::new();
             for item in edits_val {
-                let file = item.get("file").and_then(|v| v.as_str())
-                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'file' field"))?.to_string();
-                let byte_start = item.get("byte_start").and_then(|v| v.as_u64())
-                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'byte_start' field"))? as usize;
-                let byte_end = item.get("byte_end").and_then(|v| v.as_u64())
-                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'byte_end' field"))? as usize;
-                let new_content = item.get("new_content").and_then(|v| v.as_str())
-                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'new_content' field"))?.to_string();
-                edits.push(crate::engine::PatchEdit { file, byte_start, byte_end, new_content });
+                let file = item
+                    .get("file")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'file' field"))?
+                    .to_string();
+                let byte_start = item
+                    .get("byte_start")
+                    .and_then(|v| v.as_u64())
+                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'byte_start' field"))?
+                    as usize;
+                let byte_end = item
+                    .get("byte_end")
+                    .and_then(|v| v.as_u64())
+                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'byte_end' field"))?
+                    as usize;
+                let new_content = item
+                    .get("new_content")
+                    .and_then(|v| v.as_str())
+                    .ok_or_else(|| anyhow::anyhow!("Each edit must have a 'new_content' field"))?
+                    .to_string();
+                edits.push(crate::engine::PatchEdit {
+                    file,
+                    byte_start,
+                    byte_end,
+                    new_content,
+                });
             }
             ok_text(crate::engine::multi_patch(path, edits)?)
         }
         "blast_radius" => ok_text(crate::engine::blast_radius(
-            path, a.str_req("symbol", "blast_radius")?, a.uint_opt("depth"),
+            path,
+            a.str_req("symbol", "blast_radius")?,
+            a.uint_opt("depth"),
         )?),
         "graph_rename" => ok_text(crate::engine::graph_rename(
-            path, a.str_req("name", "graph_rename")?, a.str_req("new_name", "graph_rename")?,
+            path,
+            a.str_req("name", "graph_rename")?,
+            a.str_req("new_name", "graph_rename")?,
         )?),
         "graph_create" => ok_text(crate::engine::graph_create(
             path,
@@ -518,17 +617,27 @@ async fn call_tool(params: Value) -> Result<Value> {
             a.str_opt("language"),
         )?),
         "graph_move" => ok_text(crate::engine::graph_move(
-            path, a.str_req("name", "graph_move")?, a.str_req("to_file", "graph_move")?,
+            path,
+            a.str_req("name", "graph_move")?,
+            a.str_req("to_file", "graph_move")?,
         )?),
         "trace_down" => ok_text(crate::engine::trace_down(
-            path, a.str_req("name", "trace_down")?, a.uint_opt("depth"), a.str_opt("file"),
+            path,
+            a.str_req("name", "trace_down")?,
+            a.uint_opt("depth"),
+            a.str_opt("file"),
         )?),
         "semantic_search" => ok_text(crate::engine::semantic_search(
-            path, a.str_req("query", "semantic_search")?, a.uint_opt("limit"), a.str_opt("file"),
+            path,
+            a.str_req("query", "semantic_search")?,
+            a.uint_opt("limit"),
+            a.str_opt("file"),
         )?),
         "health" => ok_text(crate::engine::health(path, a.uint_opt("top"))?),
         "graph_delete" => ok_text(crate::engine::graph_delete(
-            path, a.str_req("name", "graph_delete")?, a.str_opt("file"),
+            path,
+            a.str_req("name", "graph_delete")?,
+            a.str_opt("file"),
             a.bool_opt("force").unwrap_or(false),
         )?),
         other => Err(anyhow::anyhow!("Unknown tool: {other}")),

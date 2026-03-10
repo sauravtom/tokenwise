@@ -1,6 +1,6 @@
 # tokenwise 🪀
 
-tokenwise is a code intelligence MCP server. It gives your AI agent 27 tools to read and edit any codebase — grounded in the AST, not model memory.
+tokenwise is a code intelligence MCP server. It gives your AI agent a full toolset to read and edit any codebase — grounded in the AST, not model memory.
 
 **Built for agents.** Drop it into Claude Code, Cursor, or any MCP-compatible agent. The agent calls the tools. You get better answers.
 
@@ -11,8 +11,8 @@ tokenwise is a code intelligence MCP server. It gives your AI agent 27 tools to 
 ## How it works for your agent
 
 ```
-you run:   tokenwise bake --path /your/project
-agent gets: 27 tools — search, read, write, rename, trace, analyze
+you run:   tokenwise warm --path /your/project
+agent gets: tools for search, read, write, rename, trace, analyze
 agent uses: supersearch / symbol / flow / patch — not grep, not cat
 result:     answers from facts, not memory. no hallucinated file paths.
 ```
@@ -88,9 +88,38 @@ Then reconnect your agent client so it picks up the new server (for Claude Code,
 
 ### 3. Index your project
 
-Run this once per project, and again after large changes:
+Run this once per project to build indexes and start background refresh:
 ```bash
-tokenwise bake --path /path/to/your/project
+tokenwise warm --path /path/to/your/project
+tokenwise daemon status --path /path/to/your/project
+```
+
+Notify daemon after edits (for hooks/editor integration):
+```bash
+tokenwise daemon notify --path /path/to/your/project --file src/auth.rs
+```
+
+Daemon config is auto-created on first `warm` at `.tokenwise/config.json`:
+```json
+{
+  "daemon": {
+    "auto_reindex_threshold": 20,
+    "poll_ms": 1000,
+    "idle_flush_secs": 10
+  },
+  "semantic": {
+    "enabled": true
+  }
+}
+```
+
+Automate notify for continuous freshness:
+```bash
+# Git hook (post-commit)
+git diff --name-only HEAD~1 | xargs -I{} tokenwise daemon notify --path . --file {}
+
+# Editor on-save hook
+tokenwise daemon notify --path . --file "$FILE"
 ```
 
 ---
@@ -120,7 +149,7 @@ This injects a reminder on every prompt so Claude actively uses tokenwise tools 
 
 ---
 
-You're set. Open Claude Code, Cursor, or Codex CLI, start a session, and ask about your code. The agent calls `llm_instructions` automatically on first contact and picks up all 27 tools.
+You're set. Open Claude Code, Cursor, or Codex CLI, start a session, and ask about your code. The agent calls `llm_instructions` automatically on first contact and picks up the full tool catalog.
 
 ---
 
@@ -151,7 +180,9 @@ Legacy `/yoyo:*` aliases are still accepted temporarily and emit a deprecation w
 ### Bootstrap
 | Tool | What it does |
 |---|---|
+| `warm` | Build index + start daemon for incremental refresh. |
 | `bake` | Parse the project, write the AST index. Run first. |
+| `daemon` | Start/stop/status/notify for background refresh. |
 | `shake` | Language breakdown, file count, top-complexity functions. |
 | `llm_instructions` | Agent bootstrap: tool list, workflows, prime directives. |
 

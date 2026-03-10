@@ -1,4 +1,5 @@
 mod cli;
+mod daemon;
 mod engine;
 mod lang;
 mod mcp;

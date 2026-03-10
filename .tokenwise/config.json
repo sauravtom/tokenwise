@@ -1,0 +1,10 @@
+{
+  "daemon": {
+    "auto_reindex_threshold": 20,
+    "poll_ms": 1000,
+    "idle_flush_secs": 10
+  },
+  "semantic": {
+    "enabled": true
+  }
+}

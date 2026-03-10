@@ -168,7 +168,12 @@ fn decision_map() -> Vec<DecisionEntry> {
 fn tool_catalog() -> Vec<ToolDescription> {
     vec![
         ToolDescription { name: "llm_instructions", description: "Read this first. Returns available tools, workflows, and project stats.", requires_bake: false, category: "bootstrap",     parallelisable: false },
+        ToolDescription { name: "warm",             description: "One-shot bootstrap: run bake then start daemon for incremental refresh.", requires_bake: false, category: "bootstrap",     parallelisable: false },
         ToolDescription { name: "bake",             description: "Build or refresh the index. Auto-reindexes on version upgrade or source file change.", requires_bake: false, category: "bootstrap",     parallelisable: false },
+        ToolDescription { name: "daemon_start",     description: "Start background daemon for queued file-change notifications.", requires_bake: false, category: "bootstrap",     parallelisable: false },
+        ToolDescription { name: "daemon_status",    description: "Inspect daemon liveness, queue depth, and refresh counters.", requires_bake: false, category: "read",          parallelisable: true },
+        ToolDescription { name: "daemon_notify",    description: "Queue a changed file for incremental reindex (inline fallback when daemon is offline).", requires_bake: false, category: "read",          parallelisable: true },
+        ToolDescription { name: "daemon_stop",      description: "Stop background daemon for the current project.", requires_bake: false, category: "bootstrap",     parallelisable: false },
         ToolDescription { name: "shake",            description: "Repository overview: languages, file counts, top complex functions, detected endpoints.", requires_bake: false, category: "read",         parallelisable: true },
         ToolDescription { name: "slice",            description: "Read a specific line range of any file. Use start_line/end_line from symbol.", requires_bake: false, category: "read",         parallelisable: true },
         ToolDescription { name: "find_docs",        description: "Find README, .env, config, or Docker files in the project.", requires_bake: false, category: "read",         parallelisable: true },
@@ -204,8 +209,9 @@ fn workflow_catalog() -> Vec<Workflow> {
             name: "First-time setup",
             description: "Index the project before using any bake-dependent tool.",
             steps: vec![
-                WorkflowStep { tool: "bake",  hint: "Build the index (auto-refreshes on future source changes)" },
-                WorkflowStep { tool: "shake", hint: "Get a high-level overview of the codebase" },
+                WorkflowStep { tool: "warm",          hint: "Build the index and start daemon for incremental refresh" },
+                WorkflowStep { tool: "daemon_status", hint: "Verify daemon is alive and threshold settings are applied" },
+                WorkflowStep { tool: "shake",         hint: "Get a high-level overview of the codebase" },
             ],
         },
         Workflow {
@@ -465,13 +471,19 @@ pub fn bake(path: Option<String>) -> Result<String> {
     let bake = build_bake_index(&root)?;
 
     let bakes_dir = root.join("bakes").join("latest");
-    fs::create_dir_all(&bakes_dir)
-        .map_err(|e| anyhow::anyhow!("Failed to create bakes dir: {}: {}", bakes_dir.display(), e))?;
+    fs::create_dir_all(&bakes_dir).map_err(|e| {
+        anyhow::anyhow!("Failed to create bakes dir: {}: {}", bakes_dir.display(), e)
+    })?;
     let bake_path = bakes_dir.join("bake.json");
 
     let json = serde_json::to_string_pretty(&bake)?;
-    fs::write(&bake_path, &json)
-        .map_err(|e| anyhow::anyhow!("Failed to write bake index to {}: {}", bake_path.display(), e))?;
+    fs::write(&bake_path, &json).map_err(|e| {
+        anyhow::anyhow!(
+            "Failed to write bake index to {}: {}",
+            bake_path.display(),
+            e
+        )
+    })?;
 
     // Build embeddings DB for semantic_search (best-effort — never fails the bake)
     if let Err(e) = crate::engine::embed::build_embeddings(&bakes_dir) {

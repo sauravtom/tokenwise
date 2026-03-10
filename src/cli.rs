@@ -9,6 +9,10 @@ pub enum Command {
     Shake(ShakeArgs),
     /// Build and persist a bake index under the project root.
     Bake(BakeArgs),
+    /// Build indexes and start the background daemon for fast incremental updates.
+    Warm(WarmArgs),
+    /// Manage the background daemon lifecycle.
+    Daemon(DaemonArgs),
     /// Detailed lookup of a function symbol from the bake index.
     Symbol(SymbolArgs),
     /// List all detected API endpoints from the bake index.
@@ -56,6 +60,9 @@ pub enum Command {
     GraphDelete(GraphDeleteArgs),
     /// Search for functions by natural-language intent (local TF-IDF, no external deps).
     SemanticSearch(SemanticSearchArgs),
+    /// Internal background daemon process entrypoint (hidden).
+    #[command(hide = true)]
+    DaemonRun(DaemonRunArgs),
 }
 
 #[derive(Args, Debug)]
@@ -79,6 +86,89 @@ pub struct BakeArgs {
     pub path: Option<String>,
 }
 
+#[derive(Args, Debug)]
+pub struct WarmArgs {
+    /// Optional path to the project directory to analyze.
+    #[arg(long)]
+    pub path: Option<String>,
+
+    /// Do not start daemon after bake.
+    #[arg(long, default_value_t = false)]
+    pub no_daemon: bool,
+
+    /// Optional dirty-file threshold before daemon reindex.
+    #[arg(long)]
+    pub threshold: Option<usize>,
+}
+
+#[derive(Args, Debug)]
+pub struct DaemonArgs {
+    #[command(subcommand)]
+    pub command: DaemonCommand,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum DaemonCommand {
+    /// Start background daemon for incremental reindex.
+    Start(DaemonStartArgs),
+    /// Stop running daemon.
+    Stop(DaemonStopArgs),
+    /// Show daemon status.
+    Status(DaemonStatusArgs),
+    /// Notify daemon that a file changed.
+    Notify(DaemonNotifyArgs),
+}
+
+#[derive(Args, Debug)]
+pub struct DaemonStartArgs {
+    /// Optional path to the project directory to analyze.
+    #[arg(long)]
+    pub path: Option<String>,
+
+    /// Optional dirty-file threshold before daemon reindex.
+    #[arg(long)]
+    pub threshold: Option<usize>,
+}
+
+#[derive(Args, Debug)]
+pub struct DaemonStopArgs {
+    /// Optional path to the project directory to analyze.
+    #[arg(long)]
+    pub path: Option<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct DaemonStatusArgs {
+    /// Optional path to the project directory to analyze.
+    #[arg(long)]
+    pub path: Option<String>,
+}
+
+#[derive(Args, Debug)]
+pub struct DaemonNotifyArgs {
+    /// Optional path to the project directory to analyze.
+    #[arg(long)]
+    pub path: Option<String>,
+
+    /// Changed file path (absolute or relative to project root).
+    #[arg(long)]
+    pub file: String,
+}
+
+#[derive(Args, Debug)]
+pub struct DaemonRunArgs {
+    /// Optional path to the project directory to analyze.
+    #[arg(long)]
+    pub path: Option<String>,
+
+    /// Optional dirty-file threshold before daemon reindex.
+    #[arg(long)]
+    pub threshold: Option<usize>,
+
+    /// Poll interval for queue processing in milliseconds.
+    #[arg(long, default_value_t = 1000)]
+    pub poll_ms: u64,
+}
 
 #[derive(Args, Debug)]
 pub struct SymbolArgs {
@@ -441,6 +531,8 @@ pub async fn run(command: Option<Command>) -> anyhow::Result<()> {
         Some(Command::LlmInstructions(args)) => run_llm_instructions(args).await?,
         Some(Command::Shake(args)) => run_shake(args).await?,
         Some(Command::Bake(args)) => run_bake(args).await?,
+        Some(Command::Warm(args)) => run_warm(args).await?,
+        Some(Command::Daemon(args)) => run_daemon(args).await?,
         Some(Command::Symbol(args)) => run_symbol(args).await?,
         Some(Command::AllEndpoints(args)) => run_all_endpoints(args).await?,
         Some(Command::Flow(args)) => run_flow(args).await?,
@@ -464,10 +556,9 @@ pub async fn run(command: Option<Command>) -> anyhow::Result<()> {
         Some(Command::Health(args)) => run_health(args).await?,
         Some(Command::GraphDelete(args)) => run_graph_delete(args).await?,
         Some(Command::SemanticSearch(args)) => run_semantic_search(args).await?,
+        Some(Command::DaemonRun(args)) => run_daemon_run(args).await?,
         None => {
-            eprintln!(
-                "No command provided. Run `tokenwise --help` for available commands."
-            );
+            eprintln!("No command provided. Run `tokenwise --help` for available commands.");
         }
     }
     Ok(())
@@ -495,8 +586,35 @@ async fn run_bake(args: BakeArgs) -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn run_warm(args: WarmArgs) -> anyhow::Result<()> {
+    let json = crate::daemon::warm(args.path, args.no_daemon, args.threshold)?;
+    println!("{json}");
+    Ok(())
+}
+
+async fn run_daemon(args: DaemonArgs) -> anyhow::Result<()> {
+    let json = match args.command {
+        DaemonCommand::Start(a) => crate::daemon::start(a.path, a.threshold)?,
+        DaemonCommand::Stop(a) => crate::daemon::stop(a.path)?,
+        DaemonCommand::Status(a) => crate::daemon::status(a.path)?,
+        DaemonCommand::Notify(a) => crate::daemon::notify(a.path, a.file)?,
+    };
+    println!("{json}");
+    Ok(())
+}
+
+async fn run_daemon_run(args: DaemonRunArgs) -> anyhow::Result<()> {
+    crate::daemon::run_forever(args.path, args.threshold, Some(args.poll_ms))
+}
+
 async fn run_symbol(args: SymbolArgs) -> anyhow::Result<()> {
-    let json = crate::engine::symbol(args.path, args.name, args.include_source, args.file, args.limit)?;
+    let json = crate::engine::symbol(
+        args.path,
+        args.name,
+        args.include_source,
+        args.file,
+        args.limit,
+    )?;
     println!("{json}");
     Ok(())
 }
@@ -508,7 +626,13 @@ async fn run_all_endpoints(args: AllEndpointsArgs) -> anyhow::Result<()> {
 }
 
 async fn run_flow(args: FlowArgs) -> anyhow::Result<()> {
-    let json = crate::engine::flow(args.path, args.endpoint, args.method, args.depth, args.include_source)?;
+    let json = crate::engine::flow(
+        args.path,
+        args.endpoint,
+        args.method,
+        args.depth,
+        args.include_source,
+    )?;
     println!("{json}");
     Ok(())
 }
@@ -526,8 +650,7 @@ async fn run_api_surface(args: ApiSurfaceArgs) -> anyhow::Result<()> {
 }
 
 async fn run_file_functions(args: FileFunctionsArgs) -> anyhow::Result<()> {
-    let json =
-        crate::engine::file_functions(args.path, args.file, Some(args.include_summaries))?;
+    let json = crate::engine::file_functions(args.path, args.file, Some(args.include_summaries))?;
     println!("{json}");
     Ok(())
 }
@@ -614,7 +737,8 @@ async fn run_graph_rename(args: GraphRenameArgs) -> anyhow::Result<()> {
 }
 
 async fn run_graph_create(args: GraphCreateArgs) -> anyhow::Result<()> {
-    let json = crate::engine::graph_create(args.path, args.file, args.function_name, args.language)?;
+    let json =
+        crate::engine::graph_create(args.path, args.file, args.function_name, args.language)?;
     println!("{json}");
     Ok(())
 }
