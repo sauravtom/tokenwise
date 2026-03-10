@@ -2705,7 +2705,7 @@ dependencies = [
 
 [[package]]
 name = "tokenwise"
-version = "0.22.5"
+version = "0.22.6"
 dependencies = [
  "anyhow",
  "ast-grep-core",

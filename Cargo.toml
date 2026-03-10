@@ -1,6 +1,6 @@
 [package]
 name = "tokenwise"
-version = "0.22.5"
+version = "0.22.6"
 edition = "2021"
 
 [dependencies]
@@ -18,4 +18,3 @@ rusqlite = { version = "0.38.0", features = ["bundled"] }
 
 [dev-dependencies]
 tempfile = "3"
-

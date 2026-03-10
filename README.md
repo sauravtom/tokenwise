@@ -8,24 +8,6 @@ tokenwise is a code intelligence MCP server. It gives your AI agent 27 tools to 
 
 ---
 
-## Philosophy
-
-In yo-yo tournaments, a yo-yo is just a spinning disk on a string. The magic is in the combinations — string wraps, body movements, timing layered together. A single trick is fine. Fifty moves chained in sequence is something else entirely.
-
-tokenwise works the same way. Each tool does one thing. The combinations are what's deadly:
-
-| Combination | What it does |
-|---|---|
-| `supersearch` → `symbol` → `patch` | find it, read it, change it ⚡ |
-| `blast_radius` → `health` → `graph_delete` | who calls this? is it dead? remove it safely |
-| `flow` → `multi_patch` | trace the full request path, fix it end-to-end in one shot |
-| `bake` → `semantic_search` → `suggest_placement` | where does this new function belong? |
-| `architecture_map` → `api_surface` → `graph_create` | understand the shape, find the gap, fill it |
-
-No single tool is the point. The orchestration is.
-
----
-
 ## How it works for your agent
 
 ```
@@ -41,13 +23,12 @@ result:     answers from facts, not memory. no hallucinated file paths.
 
 ### 1. Install
 
-**macOS — Homebrew (recommended)**
+**Homebrew — direct formula install (recommended)**
 ```bash
-brew tap sauravtom/tokenwise
-brew install tokenwise
+brew install --formula https://raw.githubusercontent.com/sauravtom/tokenwise/main/Formula/tokenwise.rb
 ```
 
-Homebrew handles signing and PATH automatically. No `codesign`, no `sudo mv`.
+This does not require a separate tap repo.
 
 **macOS — manual (Apple Silicon)**
 ```bash

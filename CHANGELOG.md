@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.22.6] - 2026-03-10
+
+### Added
+- `Formula/tokenwise.rb` for direct Homebrew formula installs from this repository (`brew install --formula https://raw.githubusercontent.com/sauravtom/tokenwise/main/Formula/tokenwise.rb`).
+
+### Changed
+- `README.md`: removed Philosophy section and switched install guidance to direct formula install from this repository.
+
 ## [0.22.5] - 2026-03-08
 
 ### Fixed
