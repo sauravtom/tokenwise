@@ -3,6 +3,7 @@ name: Release tokenwise binary
 on:
   push:
     tags:
+      - "v*.*"
       - "v*.*.*"
 
 jobs:

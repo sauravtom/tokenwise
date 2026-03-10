@@ -1,9 +1,0 @@
-{
-  "mcpServers": {
-    "tokenwise": {
-      "type": "stdio",
-      "command": "/Users/saurav/Documents/tokenwise/target/release/tokenwise",
-      "args": ["--mcp-server"]
-    }
-  }
-}
